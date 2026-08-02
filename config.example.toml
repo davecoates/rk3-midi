@@ -1,0 +1,104 @@
+[midi]
+# Unique substring or exact Windows MIDI output name. On this machine the full
+# virtual port name is "loopMIDI Port 2".
+port = "loopMIDI"
+
+[usb]
+reconnect_initial_seconds = 1.0
+reconnect_max_seconds = 30.0
+
+[logging]
+max_bytes = 1048576
+backups = 3
+
+# Button number means CC number for momentary/toggle mode, or note number for
+# note mode. Modes: "momentary", "toggle", "note".
+[buttons.p1]
+channel = 1
+number = 20
+mode = "momentary"
+debounce_ms = 20
+
+[buttons.p2]
+channel = 1
+number = 21
+mode = "momentary"
+debounce_ms = 20
+
+[buttons.p3]
+channel = 1
+number = 22
+mode = "momentary"
+debounce_ms = 20
+
+[buttons.p4]
+channel = 1
+number = 23
+mode = "momentary"
+debounce_ms = 20
+
+[buttons.p5]
+channel = 1
+number = 24
+mode = "momentary"
+debounce_ms = 20
+
+[buttons.p6]
+channel = 1
+number = 25
+mode = "momentary"
+debounce_ms = 20
+
+[buttons.p7]
+channel = 1
+number = 26
+mode = "momentary"
+debounce_ms = 20
+
+[buttons.p8]
+channel = 1
+number = 27
+mode = "momentary"
+debounce_ms = 20
+
+[buttons.p9]
+channel = 1
+number = 28
+mode = "momentary"
+debounce_ms = 20
+
+# Pedal calibration values in this file are defaults. `rk3-midi calibrate`
+# stores measured overrides in calibration.json beside the active config.
+# Curves: "linear", "log", "exp".
+[pedals.treadle]
+channel = 1
+cc = 11
+minimum = 25
+maximum = 478
+curve = "linear"
+curve_amount = 3.0
+deadzone = 0.02
+smoothing_ms = 12
+jitter_raw = 2
+
+[pedals.exp1]
+channel = 1
+cc = 12
+minimum = 0
+maximum = 1023
+curve = "linear"
+curve_amount = 3.0
+deadzone = 0.02
+smoothing_ms = 12
+jitter_raw = 2
+
+[pedals.exp2]
+channel = 1
+cc = 13
+minimum = 0
+maximum = 1023
+curve = "linear"
+curve_amount = 3.0
+deadzone = 0.02
+smoothing_ms = 12
+jitter_raw = 2

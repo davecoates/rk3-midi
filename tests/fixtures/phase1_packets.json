@@ -1,0 +1,24 @@
+{
+  "source": "captures/rk3-controls.jsonl, captured 2026-08-02 on RK3 firmware 10",
+  "device_info": "010a00060003092902020000010102",
+  "buttons": [
+    {"label": "P1", "pressed": "0410000000018b04", "released": "0400000000018b04", "bit": 4},
+    {"label": "P2", "pressed": "0420000000018b04", "released": "0400000000018b04", "bit": 5},
+    {"label": "P3", "pressed": "0440000000018b04", "released": "0400000000018d04", "bit": 6},
+    {"label": "P4", "pressed": "0480000000018c04", "released": "0400000000018c04", "bit": 7},
+    {"label": "P5", "pressed": "0401000000018b04", "released": "0400000000018b04", "bit": 0},
+    {"label": "P6", "pressed": "0402000000018b04", "released": "0400000000018b04", "bit": 1},
+    {"label": "P7", "pressed": "0404000000018c04", "released": "0400000000018d04", "bit": 2},
+    {"label": "P8", "pressed": "0408000000018b04", "released": "0400000000018c04", "bit": 3},
+    {"label": "P9", "pressed": "0400010000022904", "released": "0400000000024004", "bit": 8}
+  ],
+  "treadle": {
+    "minimum": "030000000000190400000000000000000000000000000000000000000000000000",
+    "maximum": "030000000001de0400000000000000000000000000000000000000000000000000",
+    "toe_switch_overtravel": "0300000000024e0400000000000000000000000000000000000000000000000000",
+    "axis": 2,
+    "observed_min": 25,
+    "observed_max": 478,
+    "observed_overtravel": 590
+  }
+}
