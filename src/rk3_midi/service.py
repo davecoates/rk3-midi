@@ -9,8 +9,9 @@ import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from .config import AppConfig, default_log_path
-from .controls import ControlProcessor
+from .config import AppConfig, default_log_path, default_stop_request_path
+from .controls import ButtonEvent, ControlProcessor
+from .leds import RK3Lights
 from .mapping import MappingEngine, MidiMessage
 from .midi_output import MidiOutput, MidiPortError
 from .protocol import (
@@ -49,7 +50,23 @@ def configure_logging(
     return log_path
 
 
+def quiesce_device(device: RK3USB) -> None:
+    # A force-stopped previous process can leave AUTO_MSG active in firmware.
+    # Quiesce it and drain queued reports so GET_DEVICE_INFO cannot be buried
+    # behind stale high-rate analog packets after upgrades or task restarts.
+    device.write(auto_message_command(digital=0, analog=0, erp=0))
+    quiesce_deadline = time.monotonic() + 0.5
+    while time.monotonic() < quiesce_deadline:
+        packet = device.read(timeout_ms=25)
+        if packet is None:
+            break
+        if packet[0] == Command.AUTO_MSG:
+            break
+
+
 def initialize_device(device: RK3USB) -> DeviceInfo:
+    quiesce_device(device)
+
     device.write(command_packet(Command.GET_DEVICE_INFO))
     deadline = time.monotonic() + 2.0
     info: DeviceInfo | None = None
@@ -87,7 +104,9 @@ class RK3MidiService:
         self.verbose = verbose
         self.stop_event = threading.Event()
         self.mapping = MappingEngine(config)
+        self.lights = RK3Lights()
         self.midi: MidiOutput | None = None
+        self.stop_request_path = default_stop_request_path()
 
     def request_stop(self, *_: object) -> None:
         self.stop_event.set()
@@ -110,6 +129,7 @@ class RK3MidiService:
             self.midi = None
 
     def run(self) -> None:
+        self.stop_request_path.unlink(missing_ok=True)
         for event_name in ("SIGINT", "SIGTERM"):
             event = getattr(signal, event_name, None)
             if event is not None:
@@ -139,6 +159,7 @@ class RK3MidiService:
                         )
                         delay = self.config.reconnect_initial_seconds
                         controls = ControlProcessor(self.config)
+                        self._restore_lights(device)
                         self._connected_loop(device, controls)
                 except MidiPortError as error:
                     LOGGER.warning("%s; reopening MIDI output", error)
@@ -167,6 +188,14 @@ class RK3MidiService:
 
     def _connected_loop(self, device: RK3USB, controls: ControlProcessor) -> None:
         while not self.stop_event.is_set():
+            if self.stop_request_path.exists():
+                LOGGER.info("graceful stop requested")
+                try:
+                    quiesce_device(device)
+                finally:
+                    self.stop_request_path.unlink(missing_ok=True)
+                    self.stop_event.set()
+                return
             packet = device.read(timeout_ms=25)
             timestamp = time.monotonic()
             if packet is not None:
@@ -179,8 +208,53 @@ class RK3MidiService:
                 else:
                     for event in controls.feed(parsed, timestamp):
                         self._send(self.mapping.handle(event))
+                        self._update_light(device, event)
             for event in controls.tick(timestamp):
                 self._send(self.mapping.handle(event))
+                self._update_light(device, event)
+
+    def _restore_lights(self, device: RK3USB) -> None:
+        device.write(self.lights.packet())
+
+    def _update_light(self, device: RK3USB, event: object) -> None:
+        if not isinstance(event, ButtonEvent):
+            return
+        button = self.config.buttons[event.name]
+        led = button.led
+        if led is None:
+            return
+        if button.led_mode == "toggle":
+            if not event.pressed:
+                return
+            if button.led_group is None:
+                targets = {led}
+            else:
+                targets = {
+                    peer.led
+                    for peer in self.config.buttons.values()
+                    if peer.led is not None and peer.led_group == button.led_group
+                }
+            enabled = not any(self.lights.enabled(target) for target in targets)
+            changed = False
+            for target in targets:
+                changed |= self.lights.set(target, enabled)
+            if changed:
+                device.write(self.lights.packet())
+            return
+        elif button.led_mode == "exclusive":
+            if not event.pressed:
+                return
+            changed = False
+            for peer in self.config.buttons.values():
+                if peer.led is not None and peer.led_group == button.led_group:
+                    changed |= self.lights.set(peer.led, peer.led == led)
+            if changed:
+                device.write(self.lights.packet())
+            return
+        else:
+            enabled = self.mapping.button_active(event.name)
+        if self.lights.set(led, enabled):
+            device.write(self.lights.packet())
 
 
 def run_service(

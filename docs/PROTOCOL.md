@@ -70,6 +70,29 @@ The live `GET_DEVICE_INFO` reply is:
 It reports firmware 10, three analog inputs, nine digital inputs, and data
 alignment 2.
 
+## LED/output layout
+
+LED state is written to endpoint `0x01` with `EP1_CMD_WRITE_IO` (`0x05`) followed
+by the 63-byte caiaq control-state bitmap. The Linux `rk3_controller` table maps
+the RK3 outputs as follows:
+
+| Output | Payload location |
+| --- | --- |
+| Four seven-segment display characters | bytes 0..3, bits 0..31 |
+| Footswitch LEDs P1..P8 | byte 4; physical labels map to bits 4,5,6,7,0,1,2,3 |
+| Treadle/pedal LED | byte 5, bit 0 |
+
+The relay preserves the Linux driver's centred `--` display state (`00 40 40 00`)
+when updating LEDs. A complete command is 64 bytes including the leading `05`.
+The pedal LED on/off command was accepted by this firmware during the v0.3.0
+hardware smoke test.
+
+The Linux table's `LED 1..8` names are protocol-order names, not the RK3's
+physical P1..P8 labels. Live hardware observations confirmed the rows are
+swapped: protocol LED 1 lights physical P5, protocol LED 4 lights P8, protocol
+LED 8 lights P4, and therefore physical P1..P8 use protocol LEDs
+5,6,7,8,1,2,3,4 respectively.
+
 ## Control map
 
 The labelled Windows capture confirmed physical P1..P9 map to firmware bits

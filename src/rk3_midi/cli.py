@@ -7,6 +7,7 @@ from pathlib import Path
 from .calibrate import calibrate
 from .config import ConfigError, load_config
 from .dump import run_dump
+from .led_test import test_led
 from .midi_output import MidiPortError, list_output_ports
 from .service import run_service
 from .usb_device import RK3USBError, inspect_rk3
@@ -18,6 +19,14 @@ def _parser() -> argparse.ArgumentParser:
 
     subcommands.add_parser("inspect", help="print all RK3 USB descriptors")
     subcommands.add_parser("list-ports", help="list available MIDI output ports")
+
+    led_test = subcommands.add_parser(
+        "led-test", help="light one RK3 LED briefly, then turn it off"
+    )
+    led_test.add_argument(
+        "led", choices=tuple(f"p{index}" for index in range(1, 9)) + ("pedal",)
+    )
+    led_test.add_argument("--seconds", type=float, default=2.0)
 
     run = subcommands.add_parser("run", help="run the RK3 USB-to-MIDI relay")
     run.add_argument("--config", type=Path, help="TOML configuration path")
@@ -56,6 +65,10 @@ def main(argv: list[str] | None = None) -> int:
                 print("\n".join(f"{index}: {name}" for index, name in enumerate(ports)))
             else:
                 print("No MIDI output ports found")
+        elif args.command == "led-test":
+            if not 0 < args.seconds <= 60:
+                raise RuntimeError("--seconds must be greater than 0 and at most 60")
+            test_led(args.led, seconds=args.seconds)
         elif args.command == "run":
             config = load_config(args.config)
             if args.port:

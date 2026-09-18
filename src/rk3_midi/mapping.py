@@ -20,6 +20,10 @@ class MappingEngine:
         self._toggles = {name: False for name in config.buttons}
         self._active = {name: False for name in config.buttons}
 
+    def button_active(self, name: str) -> bool:
+        button = self.config.buttons[name]
+        return self._toggles[name] if button.mode == "toggle" else self._active[name]
+
     def handle(self, event: ControlEvent) -> list[MidiMessage]:
         if isinstance(event, PedalEvent):
             pedal = self.config.pedals[event.name]

@@ -18,6 +18,20 @@ def test_defaults_mirror_reference_cc_map() -> None:
     assert config.pedals["treadle"].cc == 11
     assert config.pedals["exp1"].cc == 12
     assert config.pedals["exp2"].cc == 13
+    assert config.buttons["p9"].mode == "momentary"
+    assert config.buttons["p9"].led == "pedal"
+    assert config.buttons["p9"].led_mode == "toggle"
+    assert config.buttons["p8"].led == "p8"
+    assert config.buttons["p8"].led_mode == "toggle"
+    assert config.buttons["p8"].led_group == "wah"
+    assert config.buttons["p9"].led_group == "wah"
+    assert config.buttons["p4"].led_mode == "toggle"
+    assert config.buttons["p7"].led_mode == "toggle"
+    assert {
+        name
+        for name, button in config.buttons.items()
+        if button.led_group == "presets"
+    } == {"p1", "p2", "p3", "p5", "p6"}
 
 
 def test_load_toml_and_calibration_override(tmp_path) -> None:

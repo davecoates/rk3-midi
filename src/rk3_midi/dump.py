@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TextIO
 
 from .protocol import Command, auto_message_command, command_packet, describe_packet
+from .service import quiesce_device
 from .usb_device import RK3USB
 
 
@@ -43,6 +44,7 @@ def run_dump(output: Path | None = None, duration: float | None = None) -> None:
     try:
         with RK3USB.open() as device:
             print("claimed interface 0, selected alternate setting 1")
+            quiesce_device(device)
             print("sending GET_DEVICE_INFO: 01")
             device.write(command_packet(Command.GET_DEVICE_INFO))
 

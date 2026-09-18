@@ -12,6 +12,8 @@ from typing import Any
 BUTTON_NAMES = tuple(f"p{index}" for index in range(1, 10))
 PEDAL_NAMES = ("exp1", "exp2", "treadle")
 BUTTON_MODES = {"momentary", "toggle", "note"}
+LED_NAMES = {"none", "pedal", *(f"p{index}" for index in range(1, 9))}
+LED_MODES = {"follow", "toggle", "exclusive"}
 CURVES = {"linear", "log", "exp"}
 
 
@@ -25,6 +27,9 @@ class ButtonConfig:
     number: int
     mode: str
     debounce_ms: float = 20.0
+    led: str | None = None
+    led_mode: str = "follow"
+    led_group: str | None = None
 
 
 @dataclass(frozen=True)
@@ -65,9 +70,35 @@ def default_log_path() -> Path:
     return base / "rk3-midi" / "rk3-midi.log"
 
 
+def default_stop_request_path() -> Path:
+    base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    return base / "rk3-midi" / "stop.request"
+
+
 def defaults() -> AppConfig:
+    preset_buttons = {"p1", "p2", "p3", "p5", "p6"}
+    toggle_buttons = {"p4", "p7", "p8", "p9"}
     buttons = {
-        name: ButtonConfig(channel=1, number=20 + index, mode="momentary")
+        name: ButtonConfig(
+            channel=1,
+            number=20 + index,
+            mode="momentary",
+            led="pedal" if name == "p9" else name,
+            led_mode=(
+                "toggle"
+                if name in toggle_buttons
+                else "exclusive"
+                if name in preset_buttons
+                else "follow"
+            ),
+            led_group=(
+                "presets"
+                if name in preset_buttons
+                else "wah"
+                if name in {"p8", "p9"}
+                else None
+            ),
+        )
         for index, name in enumerate(BUTTON_NAMES)
     }
     pedals = {
@@ -142,11 +173,33 @@ def load_config(path: Path | None = None) -> AppConfig:
         mode = aliases.get(mode, mode)
         if mode not in BUTTON_MODES:
             raise ConfigError(f"buttons.{name}.mode must be momentary, toggle, or note")
+        led = table.get("led", base.led)
+        if not isinstance(led, str) or led not in LED_NAMES:
+            raise ConfigError(
+                f"buttons.{name}.led must be none, pedal, or p1 through p8"
+            )
+        led_mode = table.get("led_mode", base.led_mode)
+        if not isinstance(led_mode, str) or led_mode not in LED_MODES:
+            raise ConfigError(
+                f"buttons.{name}.led_mode must be follow, toggle, or exclusive"
+            )
+        led_group = table.get("led_group", base.led_group)
+        if led_group is not None and (
+            not isinstance(led_group, str) or not led_group.strip()
+        ):
+            raise ConfigError(f"buttons.{name}.led_group must be a non-empty string")
+        if led_mode == "exclusive" and led_group is None:
+            raise ConfigError(
+                f"buttons.{name}.led_group is required for exclusive LED mode"
+            )
         buttons[name] = ButtonConfig(
             channel=_integer(table, "channel", base.channel, 1, 16),
             number=_integer(table, "number", base.number, 0, 127),
             mode=mode,
             debounce_ms=_number(table, "debounce_ms", base.debounce_ms, 0, 250),
+            led=None if led == "none" else led,
+            led_mode=led_mode,
+            led_group=led_group.strip() if isinstance(led_group, str) else None,
         )
 
     pedal_tables = _table(data, "pedals")

@@ -45,7 +45,7 @@ after the relay.
 
 ## Install the packaged background app
 
-Extract `rk3-midi-0.2.0-windows-x64.zip`, open PowerShell in the extracted
+Extract `rk3-midi-0.4.1-windows-x64.zip`, open PowerShell in the extracted
 directory, and run:
 
 ```powershell
@@ -55,7 +55,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 This per-user installation does not require administrator privileges. It:
 
-- copies both executables to `%LOCALAPPDATA%\Programs\rk3-midi`;
+- copies the CLI and windowless background runtime to
+  `%LOCALAPPDATA%\Programs\rk3-midi`;
 - creates `%APPDATA%\rk3-midi\config.toml` without overwriting an existing file;
 - registers a limited interactive-user Scheduled Task named `rk3-midi`;
 - starts the windowless relay immediately and at every login;
@@ -116,6 +117,62 @@ Each button has its own MIDI channel, number, debounce time, and mode:
 - `toggle`: alternate CC 127/0 on presses;
 - `note`: note-on/velocity 127 and note-off/velocity 0.
 
+Each button also has an optional `led` target: `p1` through `p8`, `pedal`, or
+`none`. Its `led_mode` can be `follow` (mirror the outgoing MIDI state),
+`toggle` (change the light on each press), or `exclusive` (select this light
+and extinguish peers in the same `led_group`). This installation uses P1, P2,
+P3, P5, and P6 as the `presets` exclusive group. P4 and P7 independently toggle
+their own LEDs for effects. P8 and P9 keep their existing momentary MIDI
+messages and share the `wah` toggle group, driving both P8 and pedal LEDs:
+
+```toml
+[buttons.p8]
+channel = 1
+number = 27
+mode = "momentary"
+led = "p8"
+led_mode = "toggle"
+led_group = "wah"
+
+[buttons.p9]
+channel = 1
+number = 28
+mode = "momentary"
+led = "pedal"
+led_mode = "toggle"
+led_group = "wah"
+```
+
+The light follows the state sent by rk3-midi and is restored after USB reconnect
+or sleep. Changing the effect in the plugin UI or by loading a preset can make it
+disagree because Neural DSP does not provide state feedback to this output-only
+mapping.
+
+Preset selectors can form a radio-style group while effects remain independent:
+
+```toml
+[buttons.p1]
+channel = 1
+number = 20
+mode = "momentary"
+led = "p1"
+led_mode = "exclusive"
+led_group = "presets"
+
+[buttons.p2]
+channel = 1
+number = 21
+mode = "momentary"
+led = "p2"
+led_mode = "exclusive"
+led_group = "presets"
+```
+
+Any number of buttons may share the group. Selecting one turns off only its
+group peers; the pedal LED and buttons in other groups are unaffected.
+Buttons in a named `toggle` group share one state: pressing any member toggles
+every LED target in that group.
+
 For note mode, `number` is the note number; otherwise it is the CC number. Pedals
 support `linear`, `log`, and `exp` curves, endpoint deadzones, time-based
 smoothing, and raw ADC jitter rejection. Only changed 7-bit values are emitted.
@@ -152,7 +209,11 @@ The installed CLI supports:
 & "$env:LOCALAPPDATA\Programs\rk3-midi\rk3-midi.exe" dump
 & "$env:LOCALAPPDATA\Programs\rk3-midi\rk3-midi.exe" calibrate treadle
 & "$env:LOCALAPPDATA\Programs\rk3-midi\rk3-midi.exe" list-ports
+& "$env:LOCALAPPDATA\Programs\rk3-midi\rk3-midi.exe" led-test pedal --seconds 2
 ```
+
+Stop the background task before `led-test`, because only one process can own the
+RK3 USB interface.
 
 For source development:
 

@@ -18,8 +18,10 @@ def test_toggle_ignores_release_and_preserves_latch() -> None:
     buttons["p2"] = replace(buttons["p2"], mode="toggle")
     mapping = MappingEngine(replace(config, buttons=buttons))
     assert mapping.handle(ButtonEvent("p2", True))[0].data == (0xB0, 21, 127)
+    assert mapping.button_active("p2")
     assert mapping.handle(ButtonEvent("p2", False)) == []
     assert mapping.handle(ButtonEvent("p2", True))[0].data == (0xB0, 21, 0)
+    assert not mapping.button_active("p2")
 
 
 def test_note_mode_and_disconnect_release() -> None:

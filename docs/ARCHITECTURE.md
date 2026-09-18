@@ -17,6 +17,7 @@ WinUSB interface 0 / EP 0x81
   -> debounce / calibration / curve / smoothing state
   -> mapping state (momentary, toggle, note)
   -> python-rtmidi output selected by configured name
+  -> RK3 LED bitmap output reflecting local button state
 ```
 
 ## Module boundaries
@@ -29,11 +30,15 @@ WinUSB interface 0 / EP 0x81
   response curves, time-based smoothing, and raw jitter rejection. It emits only
   changed 7-bit values.
 - `mapping.py`: per-control MIDI channel/CC/note modes and toggle state.
+- `leds.py`: pure physical-to-protocol output-bitmap construction for P1..P8
+  and the pedal LED. LED policy supports follow, independent toggle, shared
+  named toggle groups, and mutually exclusive named groups.
 - `midi_output.py`: loopMIDI discovery and output only; no protocol logic.
 - `config.py`: typed TOML defaults, validation, and separate calibration storage.
 - `service.py`: lifecycle, reconnect/backoff, suspend/resume behavior, and rotating
   logging.
-- `cli.py`: thin command dispatch for `run`, `dump`, `calibrate`, and `list-ports`.
+- `cli.py`: thin command dispatch for `run`, `dump`, `calibrate`, `led-test`, and
+  `list-ports`.
 
 The RK3 does not provide an initial digital report after `AUTO_MSG`, and firmware
 10 stalls EP1 when queried with a direct `READ_IO`. The processor therefore seeds

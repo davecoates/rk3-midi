@@ -18,54 +18,72 @@ channel = 1
 number = 20
 mode = "momentary"
 debounce_ms = 20
+led_mode = "exclusive"
+led_group = "presets"
 
 [buttons.p2]
 channel = 1
 number = 21
 mode = "momentary"
 debounce_ms = 20
+led_mode = "exclusive"
+led_group = "presets"
 
 [buttons.p3]
 channel = 1
 number = 22
 mode = "momentary"
 debounce_ms = 20
+led_mode = "exclusive"
+led_group = "presets"
 
 [buttons.p4]
 channel = 1
 number = 23
 mode = "momentary"
 debounce_ms = 20
+led_mode = "toggle"
 
 [buttons.p5]
 channel = 1
 number = 24
 mode = "momentary"
 debounce_ms = 20
+led_mode = "exclusive"
+led_group = "presets"
 
 [buttons.p6]
 channel = 1
 number = 25
 mode = "momentary"
 debounce_ms = 20
+led_mode = "exclusive"
+led_group = "presets"
 
 [buttons.p7]
 channel = 1
 number = 26
 mode = "momentary"
 debounce_ms = 20
+led_mode = "toggle"
 
 [buttons.p8]
 channel = 1
 number = 27
 mode = "momentary"
 debounce_ms = 20
+led = "p8"
+led_mode = "toggle"
+led_group = "wah"
 
 [buttons.p9]
 channel = 1
 number = 28
 mode = "momentary"
 debounce_ms = 20
+led = "pedal"
+led_mode = "toggle"
+led_group = "wah"
 
 # Pedal calibration values in this file are defaults. `rk3-midi calibrate`
 # stores measured overrides in calibration.json beside the active config.
