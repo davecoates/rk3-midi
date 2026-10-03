@@ -90,3 +90,27 @@ def test_exclusive_led_group_selects_only_last_pressed_button() -> None:
     assert not service.lights.enabled("p1")
     assert service.lights.enabled("p2")
     assert service.lights.enabled("pedal") is False
+
+
+def test_preset_resets_effect_led_and_toggle_latch_without_effect_midi() -> None:
+    config = defaults()
+    buttons = dict(config.buttons)
+    buttons["p1"] = replace(buttons["p1"], preset_state={"p4": False})
+    buttons["p3"] = replace(buttons["p3"], preset_state={"p4": True})
+    buttons["p4"] = replace(buttons["p4"], mode="toggle")
+    service = RK3MidiService(replace(config, buttons=buttons))
+    usb = FakeUSB()
+
+    assert service.mapping.handle(ButtonEvent("p3", True))[0].data == (0xB0, 22, 127)
+    service._update_light(usb, ButtonEvent("p3", True))  # type: ignore[arg-type]
+    assert service.lights.enabled("p4")
+    assert service.mapping.button_active("p4")
+    assert service.mapping.handle(ButtonEvent("p4", True))[0].data == (0xB0, 23, 0)
+    service._update_light(usb, ButtonEvent("p4", True))  # type: ignore[arg-type]
+
+    service.mapping.handle(ButtonEvent("p3", False))
+    assert service.mapping.handle(ButtonEvent("p1", True))[0].data == (0xB0, 20, 127)
+    service._update_light(usb, ButtonEvent("p1", True))  # type: ignore[arg-type]
+    assert not service.lights.enabled("p4")
+    assert not service.mapping.button_active("p4")
+    assert service.mapping.handle(ButtonEvent("p4", True))[0].data == (0xB0, 23, 127)

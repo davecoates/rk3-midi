@@ -143,10 +143,10 @@ led_mode = "toggle"
 led_group = "wah"
 ```
 
-The light follows the state sent by rk3-midi and is restored after USB reconnect
-or sleep. Changing the effect in the plugin UI or by loading a preset can make it
-disagree because Neural DSP does not provide state feedback to this output-only
-mapping.
+The light follows rk3-midi's local state and is restored after USB reconnect or
+sleep. Changing an effect in the plugin UI can make it disagree because Neural
+DSP does not provide state feedback to this output-only mapping. Preset changes
+can restore known effect defaults with `preset_state` below.
 
 Preset selectors can form a radio-style group while effects remain independent:
 
@@ -172,6 +172,30 @@ Any number of buttons may share the group. Selecting one turns off only its
 group peers; the pedal LED and buttons in other groups are unaffected.
 Buttons in a named `toggle` group share one state: pressing any member toggles
 every LED target in that group.
+
+Preset buttons can set the local state of other toggle LEDs. For example, if P4
+controls reverb and presets 1 and 2 start with reverb off while presets 3 and 5
+start with it on, add these entries to the corresponding button tables:
+
+```toml
+[buttons.p1]
+preset_state = { p4 = false }
+
+[buttons.p2]
+preset_state = { p4 = false }
+
+[buttons.p3]
+preset_state = { p4 = true }
+
+[buttons.p5]
+preset_state = { p4 = true }
+```
+
+Selecting a preset updates P4's LED and, if P4 uses MIDI `toggle` mode, its
+local toggle latch. No extra effect MIDI message is sent: the plugin's preset
+determines its initial effect state. Omitting a button from `preset_state` leaves
+its current state alone. A target must use `led_mode = "toggle"`; a named toggle
+group can be targeted through any of its buttons and all its LEDs update together.
 
 For note mode, `number` is the note number; otherwise it is the CC number. Pedals
 support `linear`, `log`, and `exp` curves, endpoint deadzones, time-based

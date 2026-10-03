@@ -20,6 +20,7 @@ mode = "momentary"
 debounce_ms = 20
 led_mode = "exclusive"
 led_group = "presets"
+preset_state = { p4 = false }
 
 [buttons.p2]
 channel = 1
@@ -28,6 +29,7 @@ mode = "momentary"
 debounce_ms = 20
 led_mode = "exclusive"
 led_group = "presets"
+preset_state = { p4 = false }
 
 [buttons.p3]
 channel = 1
@@ -36,6 +38,7 @@ mode = "momentary"
 debounce_ms = 20
 led_mode = "exclusive"
 led_group = "presets"
+preset_state = { p4 = true }
 
 [buttons.p4]
 channel = 1
@@ -51,6 +54,7 @@ mode = "momentary"
 debounce_ms = 20
 led_mode = "exclusive"
 led_group = "presets"
+preset_state = { p4 = true }
 
 [buttons.p6]
 channel = 1

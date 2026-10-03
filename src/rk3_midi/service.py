@@ -248,6 +248,21 @@ class RK3MidiService:
             for peer in self.config.buttons.values():
                 if peer.led is not None and peer.led_group == button.led_group:
                     changed |= self.lights.set(peer.led, peer.led == led)
+            for target_name, enabled in button.preset_state.items():
+                target = self.config.buttons[target_name]
+                targets = (
+                    (peer_name, peer)
+                    for peer_name, peer in self.config.buttons.items()
+                    if peer.led is not None
+                    and (
+                        peer.led_group == target.led_group
+                        if target.led_group is not None
+                        else peer_name == target_name
+                    )
+                )
+                for peer_name, peer in targets:
+                    changed |= self.lights.set(peer.led, enabled)
+                    self.mapping.set_toggle_state(peer_name, enabled)
             if changed:
                 device.write(self.lights.packet())
             return

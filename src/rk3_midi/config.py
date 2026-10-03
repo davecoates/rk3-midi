@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import tomllib
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +30,7 @@ class ButtonConfig:
     led: str | None = None
     led_mode: str = "follow"
     led_group: str | None = None
+    preset_state: dict[str, bool] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -192,6 +193,18 @@ def load_config(path: Path | None = None) -> AppConfig:
             raise ConfigError(
                 f"buttons.{name}.led_group is required for exclusive LED mode"
             )
+        preset_state = table.get("preset_state", {})
+        if not isinstance(preset_state, dict) or any(
+            name not in BUTTON_NAMES or not isinstance(enabled, bool)
+            for name, enabled in preset_state.items()
+        ):
+            raise ConfigError(
+                f"buttons.{name}.preset_state must map button names to booleans"
+            )
+        if preset_state and (led_mode != "exclusive" or led == "none"):
+            raise ConfigError(
+                f"buttons.{name}.preset_state requires an exclusive LED"
+            )
         buttons[name] = ButtonConfig(
             channel=_integer(table, "channel", base.channel, 1, 16),
             number=_integer(table, "number", base.number, 0, 127),
@@ -200,7 +213,28 @@ def load_config(path: Path | None = None) -> AppConfig:
             led=None if led == "none" else led,
             led_mode=led_mode,
             led_group=led_group.strip() if isinstance(led_group, str) else None,
+            preset_state=preset_state,
         )
+
+    for name, button in buttons.items():
+        group_states: dict[str, bool] = {}
+        for target_name, enabled in button.preset_state.items():
+            target = buttons[target_name]
+            if target.led is None or target.led_mode != "toggle":
+                raise ConfigError(
+                    f"buttons.{name}.preset_state.{target_name} requires a toggle LED"
+                )
+            if target.led_group == button.led_group:
+                raise ConfigError(
+                    f"buttons.{name}.preset_state.{target_name} cannot target its preset group"
+                )
+            if target.led_group is not None:
+                previous = group_states.setdefault(target.led_group, enabled)
+                if previous != enabled:
+                    raise ConfigError(
+                        f"buttons.{name}.preset_state has conflicting values "
+                        f"for LED group {target.led_group}"
+                    )
 
     pedal_tables = _table(data, "pedals")
     pedals: dict[str, PedalConfig] = {}

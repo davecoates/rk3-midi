@@ -61,6 +61,20 @@ def test_reject_invalid_mapping(tmp_path) -> None:
         load_config(path)
 
 
+def test_preset_state_loads_and_rejects_non_toggle_target(tmp_path) -> None:
+    path = tmp_path / "presets.toml"
+    path.write_text(
+        '[buttons.p3]\npreset_state = { p4 = true }\n', encoding="utf-8"
+    )
+    assert load_config(path).buttons["p3"].preset_state == {"p4": True}
+
+    path.write_text(
+        '[buttons.p3]\npreset_state = { p1 = true }\n', encoding="utf-8"
+    )
+    with pytest.raises(ConfigError, match="requires a toggle LED"):
+        load_config(path)
+
+
 def test_save_calibration_merges_pedals_atomically(tmp_path) -> None:
     path = tmp_path / "calibration.json"
     save_calibration(path, "treadle", 25, 478)
